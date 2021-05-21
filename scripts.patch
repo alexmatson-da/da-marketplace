@@ -1,0 +1,427 @@
+diff --git a/Makefile b/Makefile
+index 27fad01..a2c3aaa 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,31 +1,34 @@
+-VERSION = $(shell ddit ditversion)
+-PYTHON = pipenv run python
++VERSION := $(shell ddit ditversion)
+ 
+-UI_DIR = ui
+-STATE_DIR = .dev
+-PKG_DIR = pkg
++# Just the Major.Minor.Patch, excluding the prerelease portion
++DAML_VERSION := $(shell ddit ditversion | sed -r "s/^([0-9]*)\.([0-9]*)\.([0-9]*)(-[a-zA-Z]*\.[0-9]*)?/\1.\2.\3/")
++PYTHON := pipenv run python
++
++UI_DIR := ui
++STATE_DIR := .dev
++PKG_DIR := pkg
+ 
+ ### *-=- Artifacts -=-*
+ 
+-dar_name = da-marketplace-$(VERSION).dar
+-dar_src = .daml/dist/$(dar_name)
+-dar = $(PKG_DIR)/$(dar_name)
++dar_name := da-marketplace-$(DAML_VERSION).dar
++dar_src := .daml/dist/$(dar_name)
++dar := $(PKG_DIR)/$(dar_name)
+ 
+-trigger_dar_name = da-marketplace-triggers-$(VERSION).dar
+-trigger_dar_src = triggers/.daml/dist/$(trigger_dar_name)
+-trigger_dar = $(PKG_DIR)/$(trigger_dar_name)
++trigger_dar_name := da-marketplace-triggers-$(DAML_VERSION).dar
++trigger_dar_src := triggers/.daml/dist/$(trigger_dar_name)
++trigger_dar := $(PKG_DIR)/$(trigger_dar_name)
+ 
+-exberry_adapter_name = da-marketplace-exberry-adapter-$(VERSION).tar.gz
+-exberry_adapter = $(PKG_DIR)/$(exberry_adapter_name)
++exberry_adapter_name := da-marketplace-exberry-adapter-$(DAML_VERSION).tar.gz
++exberry_adapter := $(PKG_DIR)/$(exberry_adapter_name)
+ 
+-damljs = daml.js
++damljs := daml.js
+ 
+-ui_name = da-marketplace-ui-$(VERSION).zip
+-ui = $(PKG_DIR)/$(ui_name)
++ui_name := da-marketplace-ui-$(VERSION).zip
++ui := $(PKG_DIR)/$(ui_name)
+ 
+-app_icon = $(PKG_DIR)/da-marketplace.svg
++app_icon := $(PKG_DIR)/da-marketplace.svg
+ 
+-dit = da-marketplace-$(VERSION).dit
++dit := da-marketplace-$(VERSION).dit
+ 
+ $(PKG_DIR):
+ 	mkdir $@
+@@ -103,16 +106,15 @@ tag:
+ 		$(UI_DIR)/package.json \
+ 		docs/local_development.md \
+ 		docs/damlhub_deployment.md
+-	@echo "Tagged files... check results before committing"
+ 
+ .PHONY: release
+-release_tag = da-marketplace-v$(VERSION)
++release_tag := da-marketplace-v$(VERSION)
+ 
+ release:
+ 	@release_check=`git tag | grep $(release_tag) | wc -l`; \
+ 	if [ $$release_check -eq 0 ]; then \
+ 		echo "New tag detected - releasing" \
+-		ddit release --dry-run; \
++		ddit release; \
+ 	else \
+ 		echo "Tag $(release_tag) already exists... skipping release"; \
+ 	fi
+diff --git a/dabl-meta.yaml b/dabl-meta.yaml
+index 60487a6..00993b1 100644
+--- a/dabl-meta.yaml
++++ b/dabl-meta.yaml
+@@ -1,6 +1,6 @@
+ catalog:
+   name: da-marketplace
+-  version: 0.2.0
++  version: 0.4.0-rc.3
+   short_description: DA Marketplace
+   description: A marketplace for issuing and trading digital tokens.
+   release_date: 2020-10-14
+@@ -8,10 +8,10 @@ catalog:
+   url: https://github.com/digital-asset/da-marketplace
+   source_url: https://github.com/digital-asset/da-marketplace
+   license: 0BSD
+-  tags: [dabl-sample-app, application]
++  tags: [dabl-sample-app, application, experimental]
+   icon_file: da-marketplace.svg
+ subdeployments:
+-  - da-marketplace-exberry-adapter-0.2.0.tar.gz
+-  - da-marketplace-triggers-0.2.0.dar
+-  - da-marketplace-ui-0.2.0.zip
+-  - da-marketplace-0.2.0.dar
++  - da-marketplace-0.4.0.dar
++  - da-marketplace-triggers-0.4.0.dar
++  - da-marketplace-exberry-adapter-0.4.0.tar.gz
++  - da-marketplace-ui-0.4.0-rc.3.zip
+diff --git a/daml.yaml b/daml.yaml
+index 1a6077c..c6748a0 100644
+--- a/daml.yaml
++++ b/daml.yaml
+@@ -12,7 +12,7 @@ parties:
+   - Broker
+   - Bank
+   - Issuer
+-version: 0.2.0
++version: 0.4.0
+ dependencies:
+   - daml-prim
+   - daml-stdlib
+diff --git a/docs/damlhub_deployment.md b/docs/damlhub_deployment.md
+index e3de4bf..36f7665 100644
+--- a/docs/damlhub_deployment.md
++++ b/docs/damlhub_deployment.md
+@@ -40,7 +40,7 @@ Under the deployments tab, click on "Upload File":
+ 
+ ![3_upload_file](https://user-images.githubusercontent.com/71082197/98857330-ec817480-242c-11eb-8b07-4b0f88d3a39f.png)
+ 
+-Upload the packaged `da-marketplace-0.2.0.dit` file.
++Upload the packaged `da-marketplace-0.3.0-rc.2` file.
+ 
+ Click "Launch" for both the UI and the Model:
+ 
+@@ -69,7 +69,7 @@ In your marketplace repo:
+ $ ./scripts/create_ledger_parties.py path/to/participants.json ledger_parties.json
+ 
+ # runs a Daml Script that adds all relevant information to the project ledger
+-$ daml script --participant-config participants.json --json-api --dar .daml/dist/da-marketplace-0.2.0.dar --script-name Setup:doSetup --input-file ledger-parties.json
++$ daml script --participant-config participants.json --json-api --dar .daml/dist/da-marketplace-0.3.0 --script-name Setup:doSetup --input-file ledger-parties.json
+ ```
+ 
+ If you would like to boostrap the marketplace with your own data, you can either change the `doSetup` function in `daml/Setup.daml`, or create your own setup function and change the `--script-name` to `MyModule:myFunction`.
+@@ -129,6 +129,6 @@ Next, in deployments, click on the Integration and configure it with your Exberr
+ 
+ ![13_click_exberry](https://user-images.githubusercontent.com/71082197/98867872-50139e00-243d-11eb-8448-479e46fd85df.png)
+ 
+-Finally, deploy an instance of `da-marketplace-exberry-adapter-0.2.0.tar.gz` and launch the automation as `Exchange`.
++Finally, deploy an instance of `da-marketplace-exberry-adapter-0.4.0.tar.gz` and launch the automation as `Exchange`.
+ 
+ If you would like to change which `SID` the Exberry adapter begins counting at for the `orderId` calls to Exberry, create a `Marketplace.Utils.ExberrySID` contract as the `Exchange` party _after_ launching the adapter.
+diff --git a/docs/local_development.md b/docs/local_development.md
+index caeb3e5..40e960c 100644
+--- a/docs/local_development.md
++++ b/docs/local_development.md
+@@ -32,7 +32,7 @@ Alternatively, to only build the DAR file and regenerate the TypeScript bindings
+ 
+ ```sh
+ $ daml build
+-$ daml codegen js .daml/dist/da-marketplace-0.2.0.dar -o daml.js
++$ daml codegen js .daml/dist/da-marketplace-0.4.0.dar -o daml.js
+ $ cd ui
+ $ yarn install --force --frozen-lockfile
+ ```
+diff --git a/exberry_adapter/setup.py b/exberry_adapter/setup.py
+index 2a9afa5..857a597 100644
+--- a/exberry_adapter/setup.py
++++ b/exberry_adapter/setup.py
+@@ -1,7 +1,7 @@
+ from setuptools import setup
+ 
+ setup(name='da-marketplace-exberry-adapter',
+-      version='0.2.0',
++      version='0.4.0',
+       description='Daml Marketplace Exberry Adapter',
+       author='Digital Asset',
+       url='daml.com',
+diff --git a/integrationTesting/daml.yaml b/integrationTesting/daml.yaml
+index 62aeb36..d22e9ee 100644
+--- a/integrationTesting/daml.yaml
++++ b/integrationTesting/daml.yaml
+@@ -12,13 +12,13 @@ parties:
+   - Public
+   - Exchange
+   - Broker
+-version: 0.2.0
++version: 0.4.0
+ dependencies:
+   - daml-prim
+   - daml-stdlib
+   - daml-script
+ data-dependencies:
+-  - ../.daml/dist/da-marketplace-0.2.0.dar
++  - ../.daml/dist/da-marketplace-0.4.0.dar
+ start-navigator: no
+ sandbox-options:
+   - --wall-clock-time
+diff --git a/scripts/tag-versions.sh b/scripts/tag-versions.sh
+index d83e6d0..af221b8 100755
+--- a/scripts/tag-versions.sh
++++ b/scripts/tag-versions.sh
+@@ -6,6 +6,17 @@ set -eu
+ 
+ app_version=$1
+ 
++# Should match a semver subset of things like: "1.2.3", "1.2.3-rc.1", "42.10.999-alpha.87"
++# This requires the -r flag to sed, which enables extended regular expressions
++vregex='[0-9]*\.[0-9]*\.[0-9]*(-[a-zA-Z]*\.[0-9]*)?'
++
++# daml.yaml files can't handle full semver versions, keep just the
++# MAJOR.MINOR.PATCH fields for them
++capture_regex="([0-9]*)\.([0-9]*)\.([0-9]*)(-[a-zA-Z]*\.[0-9]*)?"
++daml_version=$(echo $1 | sed -r "s/^$capture_regex/\1.\2.\3/")
++
++echo "Application version is $app_version, Daml version is $daml_version."
++
+ dabl_meta=$2
+ daml_yaml=$3
+ daml_yaml_triggers=$4
+@@ -15,24 +26,40 @@ package_json=$7
+ docs_localdev=$8
+ docs_damlhub=$9
+ 
+-vregex='[0-9]*\.[0-9]*\.[0-9]*'
++echo "Retagging versions in all files..."
+ 
+-yq w -i $daml_yaml 'version' "$app_version"
++echo "  Tagging dabl-meta.yaml"
++if echo "$app_version" | grep -q '-'; then
++    sed -ri "s/tags:.*/tags: [dabl-sample-app, application, experimental]/" $dabl_meta
++else
++    sed -ri "s/tags:.*/tags: [dabl-sample-app, application]/" $dabl_meta
++fi
+ 
+-yq w -i $daml_yaml_triggers 'version' "$app_version"
++echo "  Tagging daml.yaml"
++yq w -i $daml_yaml 'version' "$daml_version"
++
++echo "  Tagging triggers daml.yaml"
++yq w -i $daml_yaml_triggers 'version' "$daml_version"
+ yq w -i $daml_yaml_triggers 'data-dependencies' ""
+-yq w -i $daml_yaml_triggers 'data-dependencies[+]' "../.daml/dist/da-marketplace-$app_version.dar"
++yq w -i $daml_yaml_triggers 'data-dependencies[+]' "../.daml/dist/da-marketplace-$daml_version.dar"
+ 
+-yq w -i $daml_yaml_it 'version' "$app_version"
++echo "  Tagging integrationTesting daml.yaml"
++yq w -i $daml_yaml_it 'version' "$daml_version"
+ yq w -i $daml_yaml_it 'data-dependencies' ""
+-yq w -i $daml_yaml_it 'data-dependencies[+]' "../.daml/dist/da-marketplace-$app_version.dar"
++yq w -i $daml_yaml_it 'data-dependencies[+]' "../.daml/dist/da-marketplace-$daml_version.dar"
++
++echo "  Tagging exberry_adapter setup.py"
++sed -ri "s/version='$vregex/version='$daml_version/" $exberry_setup
+ 
+-sed -i "s/version='$vregex/version='$app_version/" $exberry_setup
++echo "  Tagging ui package.json"
++sed -ri "s/\"version\": \"$vregex/\"version\": \"$app_version/" $package_json
++sed -ri "s/da-marketplace\-$vregex\"/da-marketplace\-$daml_version\"/" $package_json
+ 
+-sed -i "s/\"version\": \"$vregex/\"version\": \"$app_version/" $package_json
+-sed -i "s/da-marketplace\-$vregex\"/da-marketplace\-$app_version\"/" $package_json
++echo "  Tagging docs"
++sed -ri "s/da-marketplace\-$vregex/da-marketplace\-$daml_version/" $docs_localdev
+ 
+-sed -i "s/da-marketplace\-$vregex/da-marketplace\-$app_version/" $docs_localdev
++sed -ri "s/da-marketplace\-$vregex.dit/da-marketplace\-$app_version/" $docs_damlhub
++sed -ri "s/da-marketplace\-$vregex.dar/da-marketplace\-$daml_version/" $docs_damlhub
++sed -ri "s/da-marketplace-exberry-adapter\-$vregex/da-marketplace-exberry-adapter\-$daml_version/" $docs_damlhub
+ 
+-sed -i "s/da-marketplace\-$vregex/da-marketplace\-$app_version/g" $docs_damlhub
+-sed -i "s/da-marketplace-exberry-adapter\-$vregex/da-marketplace-exberry-adapter\-$app_version/" $docs_damlhub
++echo "Tagged all files... check results before committing"
+diff --git a/scripts/verify-versions.sh b/scripts/verify-versions.sh
+index bcd12ec..f205dc1 100755
+--- a/scripts/verify-versions.sh
++++ b/scripts/verify-versions.sh
+@@ -5,61 +5,92 @@ set -eu
+ # match exactly with the canonical version supplied in `dabl-meta.yaml`
+ 
+ app_version=$(yq r dabl-meta.yaml 'catalog.version')
++
++# daml.yaml files can't handle full semver versions, keep just the
++# MAJOR.MINOR.PATCH fields for them
++capture_regex="([0-9]*)\.([0-9]*)\.([0-9]*)(-[a-zA-Z]*\.[0-9]*)?"
++short_version=$(echo $app_version | sed -r "s/^$capture_regex/\1.\2.\3/")
++
++echo "Application version is $app_version, short version is $short_version."
++
+ return_code=0
+ 
+ green='\033[0;92m'
+ red='\033[0;91m'
++orange='\033[0;33m'
+ nc='\033[0m' # No Color
+ 
+ decorate_error () {
+-  local msg=$1
+-  local file=$2
+-  printf "${msg}${red}${file}${nc}\n"
++    local msg=$1
++    local file=$2
++    printf "${msg}${red}${file}${nc}\n"
+ }
+ 
+ printf "Verifying versions match up with app version: ${green}${app_version}${nc}...\n"
+ 
+-daml_version=`cat daml.yaml | grep "$app_version" | wc -l`
++if echo "$app_version" | grep -q '-'; then
++    if cat dabl-meta.yaml | grep -q 'experimental'; then
++        :
++    else
++        decorate_error "  Missing the ['experimental'] tag in " dabl-meta.yaml
++        return_code=1
++    fi
++else
++    if cat dabl-meta.yaml | grep -q 'experimental'; then
++        decorate_error "  Found an ['experimental'] tag that must be removed in " dabl-meta.yaml
++        return_code=1
++    fi
++fi
++
++# Escape . characters in the version string
++short_version=${short_version//./\\.}
++
++daml_version=`cat daml.yaml | grep "$short_version" | wc -l`
+ if [[ daml_version -ne 1 ]] ; then
+-  decorate_error "Mismatched version in %s" daml.yaml
+-  return_code=1
++    decorate_error "  Mismatched version in %s" daml.yaml
++    return_code=1
+ fi
+ 
+-daml_trigger_version=`cat triggers/daml.yaml | grep $app_version | wc -l`
++daml_trigger_version=`cat triggers/daml.yaml | grep $short_version | wc -l`
+ if [[ daml_trigger_version -ne 2 ]] ; then
+-  decorate_error "Mismatched version(s) in %s" triggers/daml.yaml
+-  return_code=1
++    decorate_error "  Mismatched version(s) in %s" triggers/daml.yaml
++    return_code=1
+ fi
+ 
+-daml_it_version=`cat integrationTesting/daml.yaml | grep $app_version | wc -l`
++daml_it_version=`cat integrationTesting/daml.yaml | grep $short_version | wc -l`
+ if [[ daml_it_version -ne 2 ]] ; then
+-  decorate_error "Mismatched version(s) in %s" integrationTest/daml.yaml
+-  return_code=1
++    decorate_error "  Mismatched version(s) in %s" integrationTest/daml.yaml
++    return_code=1
+ fi
+ 
+-exberry_adapter_version=`cat exberry_adapter/setup.py | grep "version='$app_version" | wc -l`
++exberry_adapter_version=`cat exberry_adapter/setup.py | grep "version='$short_version" | wc -l`
+ if [[ exberry_adapter_version -ne 1 ]] ; then
+-  decorate_error "Mismatched version in %s" exberry_adapter/setup.py
+-  return_code=1
++    decorate_error "  Mismatched version in %s" exberry_adapter/setup.py
++    return_code=1
+ fi
+ 
+-ui_version=`cat ui2/package.json | grep $app_version | wc -l`
++ui_version=`cat ui/package.json | grep $short_version | wc -l`
+ if [[ ui_version -ne 2 ]] ; then
+-  decorate_error "Mismatched version(s) in %s" package.json
+-  return_code=1
++    decorate_error "  Mismatched version(s) in %s" package.json
++    return_code=1
++fi
++
++local_docs_version=`cat docs/local_development.md | grep $short_version | wc -l`
++if [[ local_docs_version -ne 1 ]] ; then
++    decorate_error "  Mismatched version in %s" docs/local_development.md
++    return_code=1
+ fi
+ 
+-docs_version=`cat docs/local_development.md | grep $app_version | wc -l`
+-if [[ docs_version -ne 1 ]] ; then
+-  decorate_error "Mismatched version in %s" docs/local_development.md
+-  return_code=1
++damlhub_docs_version=`cat docs/damlhub_deployment.md | grep $short_version | wc -l`
++if [[ damlhub_docs_version -ne 3 ]] ; then
++    decorate_error "  Mismatched version(s) in %s" docs/damlhub_deployment.md
++    return_code=1
+ fi
+ 
+ if [[ $return_code -eq 0 ]] ; then
+-  echo "Success: All versions match!"
++    echo "Success: All versions match!"
+ else
+-  echo "Error: Found mismatching versions :("
+-  echo "Run `make tag` to attempt a fix automatically. Commit and push the resulting changes."
++    printf "\n${orange}Version verification failed :(${nc}\nRun \`${green}make tag${nc}\` to attempt a fix automatically. Commit and push the resulting changes.\n"
+ fi
+ 
+ exit $return_code
+diff --git a/triggers/daml.yaml b/triggers/daml.yaml
+index fbd87a4..9df1f47 100644
+--- a/triggers/daml.yaml
++++ b/triggers/daml.yaml
+@@ -12,14 +12,14 @@ parties:
+   - Exchange
+   - Broker
+   - Ccp
+-version: 0.2.0
++version: 0.4.0
+ # trigger-dependencies-begin
+ dependencies:
+   - daml-prim
+   - daml-stdlib
+   - daml-trigger
+ data-dependencies:
+-  - ../.daml/dist/da-marketplace-0.2.0.dar
++  - ../.daml/dist/da-marketplace-0.4.0.dar
+ sandbox-options:
+   - --wall-clock-time
+ build-options:
+diff --git a/ui/package.json b/ui/package.json
+index e2588a0..8c87a72 100644
+--- a/ui/package.json
++++ b/ui/package.json
+@@ -1,9 +1,9 @@
+ {
+   "name": "da-marketplace-ui",
+-  "version": "0.2.0",
++  "version": "0.4.0-rc.3",
+   "private": true,
+   "dependencies": {
+-    "@daml.js/da-marketplace": "file:../daml.js/da-marketplace-0.2.0",
++    "@daml.js/da-marketplace": "file:../daml.js/da-marketplace-0.4.0",
+     "@daml/hub-react": "^0.2.1",
+     "@daml/ledger": "1.12.0",
+     "@daml/react": "1.12.0",

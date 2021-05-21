@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='da-marketplace-exberry-adapter',
-      version='0.4.0',
+      version='0.5.0',
       description='Daml Marketplace Exberry Adapter',
       author='Digital Asset',
       url='daml.com',

@@ -129,6 +129,6 @@ Next, in deployments, click on the Integration and configure it with your Exberr
 
 ![13_click_exberry](https://user-images.githubusercontent.com/71082197/98867872-50139e00-243d-11eb-8448-479e46fd85df.png)
 
-Finally, deploy an instance of `da-marketplace-exberry-adapter-0.4.0.tar.gz` and launch the automation as `Exchange`.
+Finally, deploy an instance of `da-marketplace-exberry-adapter-0.5.0.tar.gz` and launch the automation as `Exchange`.
 
 If you would like to change which `SID` the Exberry adapter begins counting at for the `orderId` calls to Exberry, create a `Marketplace.Utils.ExberrySID` contract as the `Exchange` party _after_ launching the adapter.
