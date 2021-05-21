@@ -30,9 +30,9 @@ echo "Retagging versions in all files..."
 
 echo "  Tagging dabl-meta.yaml"
 if echo "$app_version" | grep -q '-'; then
-    yq w -i $dabl_meta 'catalog.tags' '[dabl-sample-app, application, experimental]'
+    sed -ri "s/tags:.*/tags: [dabl-sample-app, application, experimental]/" $dabl_meta
 else
-    yq w -i $dabl_meta 'catalog.tags' '[dabl-sample-app, application]'
+    sed -ri "s/tags:.*/tags: [dabl-sample-app, application]/" $dabl_meta
 fi
 
 echo "  Tagging daml.yaml"
