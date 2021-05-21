@@ -28,6 +28,13 @@ docs_damlhub=$9
 
 echo "Retagging versions in all files..."
 
+echo "  Tagging dabl-meta.yaml"
+if echo "$app_version" | grep -q '-'; then
+    yq w -i $dabl_meta 'catalog.tags' '[dabl-sample-app, application, experimental]'
+else
+    yq w -i $dabl_meta 'catalog.tags' '[dabl-sample-app, application]'
+fi
+
 echo "  Tagging daml.yaml"
 yq w -i $daml_yaml 'version' "$daml_version"
 
@@ -49,9 +56,10 @@ sed -ri "s/\"version\": \"$vregex/\"version\": \"$app_version/" $package_json
 sed -ri "s/da-marketplace\-$vregex\"/da-marketplace\-$daml_version\"/" $package_json
 
 echo "  Tagging docs"
-sed -ri "s/da-marketplace\-$vregex/da-marketplace\-$app_version/" $docs_localdev
+sed -ri "s/da-marketplace\-$vregex/da-marketplace\-$daml_version/" $docs_localdev
 
-sed -ri "s/da-marketplace\-$vregex/da-marketplace\-$app_version/g" $docs_damlhub
-sed -ri "s/da-marketplace-exberry-adapter\-$vregex/da-marketplace-exberry-adapter\-$app_version/" $docs_damlhub
+sed -ri "s/da-marketplace\-$vregex.dit/da-marketplace\-$app_version/" $docs_damlhub
+sed -ri "s/da-marketplace\-$vregex.dar/da-marketplace\-$daml_version/" $docs_damlhub
+sed -ri "s/da-marketplace-exberry-adapter\-$vregex/da-marketplace-exberry-adapter\-$daml_version/" $docs_damlhub
 
 echo "Tagged all files... check results before committing"
