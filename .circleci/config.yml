@@ -116,7 +116,7 @@ jobs:
     steps:
       - add_ssh_keys:
           fingerprints:
-            - "47:af:b2:64:7a:bb:03:49:99:93:e2:74:97:55:f4:69"
+            - "11:45:a2:fd:a3:5e:a0:2e:e4:94:1d:69:e0:ad:8e:21"
       - checkout
       - init_submodules
       - install_sdk:
